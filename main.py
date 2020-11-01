@@ -29,9 +29,21 @@ def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
 # Press the green button in the gutter to run the script.
 
 def load_housing_data(housing_path=HOUSING_PATH):
+    # if housing.csv exists?
+    if not os.path.exists(os.path.join(housing_path, "housing.csv")):
+        fetch_housing_data()
     csv_path = os.path.join(housing_path, "housing.csv")
     return pd.read_csv(csv_path)
 
+def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
+    os.makedirs(housing_path, exist_ok=True)
+    tgz_path = os.path.join(housing_path, "housing.tgz")
+    print(f'Fetching {housing_url}')
+    urllib.request.urlretrieve(housing_url, tgz_path)
+    housing_tgz = tarfile.open(tgz_path)
+    print(f'Extracting {tgz_path} to {housing_path}')
+    housing_tgz.extractall(path=housing_path)
+    housing_tgz.close()
 
 def plot_housing_data(housing):
     housing.hist(bins=50, figsize=(20,15))
@@ -39,11 +51,6 @@ def plot_housing_data(housing):
 
 if __name__ == '__main__':
     housing = load_housing_data()
-    train_set, test_set = train_test_split(housing, test_size=0.2, random_state=42)
-    # print(housing.head())
-    # print(housing.info())
-    # print(housing['ocean_proximity'].value_counts())
-    # print(housing.describe())
     housing["income_cat"] = pd.cut(housing["median_income"],
                                    bins=[0., 1.5, 3.0, 4.5, 6., np.inf],
                                    labels=[1, 2, 3, 4, 5])
@@ -52,8 +59,6 @@ if __name__ == '__main__':
     for train_index, test_index in split.split(housing, housing["income_cat"]):
         strat_train_set = housing.loc[train_index]
         strat_test_set = housing.loc[test_index]
-
-    print(strat_test_set["income_cat"].value_counts() / len(strat_test_set))
     for set_ in (strat_train_set, strat_test_set):
         set_.drop("income_cat", axis=1, inplace=True)
     housing = strat_train_set.copy()
@@ -61,8 +66,6 @@ if __name__ == '__main__':
                  s=housing["population"]/100, label="population", figsize=(10,7),
                  c="median_house_value", cmap=plt.get_cmap("jet"), colorbar=True,)
     plt.show()
-    corr_matrix = housing.corr()
-    print(corr_matrix["median_house_value"].sort_values(ascending=False))
     attributes = ["median_house_value", "median_income", "total_rooms",
                   "housing_median_age"]
     scatter_matrix(housing[attributes], figsize=(12, 8))
@@ -72,6 +75,7 @@ if __name__ == '__main__':
     housing["bedrooms_per_room"] = housing["total_bedrooms"] / housing["total_rooms"]
     housing["population_per_household"] = housing["population"] / housing["households"]
 
-
+    corr_matrix = housing.corr()
+    print(corr_matrix["median_house_value"].sort_values(ascending=False))
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
