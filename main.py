@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedShuffleSplit
 from pandas.plotting import scatter_matrix
+from sklearn.impute import SimpleImputer
 
 DOWNLOAD_ROOT = "https://raw.githubusercontent.com/ageron/handson-ml2/master/"
 HOUSING_PATH = os.path.join("datasets", "housing")
@@ -77,5 +78,18 @@ if __name__ == '__main__':
 
     corr_matrix = housing.corr()
     print(corr_matrix["median_house_value"].sort_values(ascending=False))
+
+    housing = strat_train_set.drop("median_house_value", axis=1)
+    housing_labels = strat_train_set["median_house_value"].copy()
+
+    # median = housing["total_bedrooms"].median()
+    # housing["total_bedrooms"].fillna(median, inplace=True)
+
+    imputer = SimpleImputer(strategy="median")
+    housing_num = housing.drop("ocean_proximity", axis=1)
+    imputer.fit(housing_num)
+    X = imputer.transform(housing_num)
+    housing_tr = pd.DataFrame(X, columns=housing_num.columns,
+                              index=housing_num.index)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
